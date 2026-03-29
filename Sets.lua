@@ -222,6 +222,8 @@ function AddonManager:ApplySet(name)
         local installedName = C_AddOns.GetAddOnInfo(addonName)
         if installedName then
             C_AddOns.EnableAddOn(addonName, player)
+        else
+            set.addons[addonName] = nil
         end
     end
 
