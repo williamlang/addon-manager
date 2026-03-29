@@ -5,6 +5,7 @@ AddonManager.CURRENT_VERSION = 1
 AddonManager.ZONE_TYPES = {
     { value = "raid",    label = "Raid" },
     { value = "dungeon", label = "Dungeon" },
+    { value = "delve",   label = "Delve" },
     { value = "pvp",     label = "Battleground" },
     { value = "arena",   label = "Arena" },
 }
@@ -66,8 +67,13 @@ end
 -- Checks if the current instance has a set assigned and prompts to switch.
 function AddonManager:CheckZoneSwitch()
     if not self.db or not self.db.options.autoSwitchEnabled then return end
-    local _, instanceType = GetInstanceInfo()
-    local zoneType = self.INSTANCE_TO_ZONE[instanceType]
+    local zoneType
+    if C_PartyInfo.IsDelveInProgress() then
+        zoneType = "delve"
+    else
+        local _, instanceType = GetInstanceInfo()
+        zoneType = self.INSTANCE_TO_ZONE[instanceType]
+    end
     if not zoneType then return end
     local setName = self:GetSetForZoneType(zoneType)
     if not setName then return end
