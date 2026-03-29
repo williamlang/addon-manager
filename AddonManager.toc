@@ -7,4 +7,5 @@
 
 Core.lua
 Sets.lua
+Options.lua
 UI.lua

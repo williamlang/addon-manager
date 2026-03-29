@@ -402,8 +402,12 @@ SlashCmdList["ADDONMANAGER"] = function(input)
         local err = AddonManager:RenameSet(oldName, newName)
         if err then print(err) else print("Renamed \"" .. oldName .. "\" to \"" .. newName .. "\".") end
 
+    elseif cmd == "options" or cmd == "config" then
+        AddonManager:OpenOptions()
+
     elseif cmd == "help" then
         print("/am               — toggle UI")
+        print("/am options       — open settings panel")
         print("/am list          — list saved sets")
         print("/am save <name>   — save current addon state as a named set")
         print("/am load <name>   — apply a set and reload UI")
