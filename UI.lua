@@ -34,13 +34,13 @@ local function createMainFrame()
     f:Hide()
     mainFrame = f
 
-    f.TitleText:SetText("AddonManager")
+    if f.TitleText then f.TitleText:SetText("AddonManager") end
 
     -- --------------------------------------------------------
     -- Left panel: set list
     -- --------------------------------------------------------
     local leftPanel = CreateFrame("Frame", nil, f)
-    leftPanel:SetPoint("TOPLEFT", f.Inset, "TOPLEFT", 0, 0)
+    leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -28)
     leftPanel:SetSize(PANEL_LEFT_W, FRAME_H - 60)
 
     local setListLabel = leftPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -74,15 +74,15 @@ local function createMainFrame()
     -- --------------------------------------------------------
     local divider = f:CreateTexture(nil, "ARTWORK")
     divider:SetSize(1, FRAME_H - 60)
-    divider:SetPoint("TOPLEFT", f.Inset, "TOPLEFT", PANEL_LEFT_W, 0)
+    divider:SetPoint("TOPLEFT", f, "TOPLEFT", PANEL_LEFT_W + 4, -28)
     divider:SetColorTexture(0.3, 0.3, 0.3, 1)
 
     -- --------------------------------------------------------
     -- Right panel: addon checklist
     -- --------------------------------------------------------
     local rightPanel = CreateFrame("Frame", nil, f)
-    rightPanel:SetPoint("TOPLEFT", f.Inset, "TOPLEFT", PANEL_LEFT_W + 4, 0)
-    rightPanel:SetPoint("BOTTOMRIGHT", f.Inset, "BOTTOMRIGHT", 0, 0)
+    rightPanel:SetPoint("TOPLEFT", f, "TOPLEFT", PANEL_LEFT_W + 8, -28)
+    rightPanel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -4, 4)
 
     local addonListLabel = rightPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     addonListLabel:SetPoint("TOPLEFT", rightPanel, PAD, -PAD)
@@ -127,7 +127,7 @@ local function createMainFrame()
     confirmDialog:SetPoint("CENTER")
     confirmDialog:SetFrameStrata("FULLSCREEN_DIALOG")
     confirmDialog:Hide()
-    confirmDialog.TitleText:SetText("Confirm Reload")
+    if confirmDialog.TitleText then confirmDialog.TitleText:SetText("Confirm Reload") end
 
     local confirmText = confirmDialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     confirmText:SetPoint("TOP", confirmDialog, "TOP", 0, -36)
