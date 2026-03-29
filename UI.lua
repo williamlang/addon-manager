@@ -21,6 +21,10 @@ local mainFrame
 local function createMainFrame()
     if mainFrame then return end
 
+    -- State (declared early so all closures can reference them)
+    local selectedSet = nil   -- currently highlighted set name
+    local checkboxes  = {}    -- addonName -> CheckButton
+
     -- Root frame
     local f = CreateFrame("Frame", "AddonManagerFrame", UIParent, "BasicFrameTemplateWithInset")
     f:SetSize(FRAME_W, FRAME_H)
@@ -235,10 +239,6 @@ local function createMainFrame()
     noBtn:SetScript("OnClick", function() confirmDialog:Hide() end)
 
     -- --------------------------------------------------------
-    -- State
-    -- --------------------------------------------------------
-    local selectedSet   = nil   -- currently highlighted set name
-    local checkboxes    = {}    -- addonName -> CheckButton
 
     -- --------------------------------------------------------
     -- Populate addon checklist
