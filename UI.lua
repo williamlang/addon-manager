@@ -128,7 +128,7 @@ local function createMainFrame()
                 zoneDropdown:Hide()
                 if not selectedSet then return end
                 AddonManager:SetZoneType(selectedSet, optValue)
-                zoneBtn:SetText(getZoneLabel(optValue) .. "  ▼")
+                zoneBtn:SetText(getZoneLabel(optValue) .. "")
             end)
             zoneDropRows[#zoneDropRows + 1] = r
             y = y - 20
@@ -155,7 +155,7 @@ local function createMainFrame()
             return
         end
         local set = AddonManager:GetSet(selectedSet)
-        zoneBtn:SetText(getZoneLabel(set and set.zoneType) .. "  ▼")
+        zoneBtn:SetText(getZoneLabel(set and set.zoneType) .. "")
         zoneLbl:Show()
         zoneBtn:Show()
     end
