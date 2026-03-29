@@ -134,6 +134,39 @@ function AddonManager:GetSet(name)
     return getDB().sets[name]
 end
 
+-- Returns the set name assigned to a given zone type, or nil.
+function AddonManager:GetSetForZoneType(zoneType)
+    for name, set in pairs(getDB().sets) do
+        if set.zoneType == zoneType then
+            return name
+        end
+    end
+    return nil
+end
+
+-- Assigns a zone type to a set (1-to-1: clears it from any other set first).
+-- Pass nil zoneType to clear the assignment from this set.
+-- Returns nil on success, or an error string.
+function AddonManager:SetZoneType(setName, zoneType)
+    if isReserved(setName) then
+        return "Cannot assign a zone type to the Default set."
+    end
+    local db = getDB()
+    if not db.sets[setName] then
+        return "Set \"" .. setName .. "\" does not exist."
+    end
+    -- Enforce 1-to-1: clear this zone type from any other set
+    if zoneType then
+        for _, set in pairs(db.sets) do
+            if set.zoneType == zoneType then
+                set.zoneType = nil
+            end
+        end
+    end
+    db.sets[setName].zoneType = zoneType
+    return nil
+end
+
 -- Returns two lists: valid addon names and missing addon names
 -- for the given set (addons that are no longer installed).
 function AddonManager:ValidateSet(name)

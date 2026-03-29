@@ -69,6 +69,93 @@ local function createMainFrame()
     deleteBtn:SetText("Delete")
     deleteBtn:Disable()
 
+    -- Zone type selector (shown when a set is selected)
+    local zoneLbl = leftPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    zoneLbl:SetPoint("BOTTOMLEFT", leftPanel, PAD, PAD + 28)
+    zoneLbl:SetText("Zone:")
+    zoneLbl:Hide()
+
+    local zoneBtn = CreateFrame("Button", nil, leftPanel, "UIPanelButtonTemplate")
+    zoneBtn:SetSize(130, 20)
+    zoneBtn:SetPoint("LEFT", zoneLbl, "RIGHT", 4, 0)
+    zoneBtn:Hide()
+
+    -- Zone dropdown (opens upward)
+    local zoneDropdown = CreateFrame("Frame", nil, leftPanel, "BackdropTemplate")
+    zoneDropdown:SetWidth(138)
+    zoneDropdown:SetFrameStrata("DIALOG")
+    zoneDropdown:SetBackdrop({
+        bgFile   = "Interface/ChatFrame/ChatFrameBackground",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    zoneDropdown:SetBackdropColor(0.08, 0.08, 0.08, 0.97)
+    zoneDropdown:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    zoneDropdown:Hide()
+
+    local ZONE_OPTIONS = { { label = "None", value = nil } }
+    for _, zt in ipairs(AddonManager.ZONE_TYPES) do
+        ZONE_OPTIONS[#ZONE_OPTIONS + 1] = { label = zt.label, value = zt.value }
+    end
+
+    local function getZoneLabel(zoneType)
+        return zoneType and (AddonManager.ZONE_LABEL[zoneType] or zoneType) or "None"
+    end
+
+    local zoneDropRows = {}
+    local function buildZoneDropdown()
+        for _, r in ipairs(zoneDropRows) do r:Hide() end
+        zoneDropRows = {}
+        local y = -4
+        for _, opt in ipairs(ZONE_OPTIONS) do
+            local r = CreateFrame("Button", nil, zoneDropdown)
+            r:SetSize(130, 20)
+            r:SetPoint("TOPLEFT", zoneDropdown, 4, y)
+            r:Show()
+            local hl = r:CreateTexture(nil, "HIGHLIGHT")
+            hl:SetAllPoints()
+            hl:SetColorTexture(0.2, 0.5, 1, 0.3)
+            local lbl = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            lbl:SetPoint("LEFT", r, 4, 0)
+            lbl:SetText(opt.label)
+            local optValue = opt.value
+            r:SetScript("OnClick", function()
+                zoneDropdown:Hide()
+                if not selectedSet then return end
+                AddonManager:SetZoneType(selectedSet, optValue)
+                zoneBtn:SetText(getZoneLabel(optValue) .. "  ▼")
+            end)
+            zoneDropRows[#zoneDropRows + 1] = r
+            y = y - 20
+        end
+        zoneDropdown:SetHeight(math.abs(y) + 4)
+    end
+
+    zoneBtn:SetScript("OnClick", function()
+        if zoneDropdown:IsShown() then
+            zoneDropdown:Hide()
+        else
+            buildZoneDropdown()
+            zoneDropdown:ClearAllPoints()
+            zoneDropdown:SetPoint("BOTTOMLEFT", zoneBtn, "TOPLEFT", 0, 2)
+            zoneDropdown:Show()
+        end
+    end)
+
+    local function updateZoneSelector()
+        if not selectedSet or selectedSet == "Default" then
+            zoneLbl:Hide()
+            zoneBtn:Hide()
+            zoneDropdown:Hide()
+            return
+        end
+        local set = AddonManager:GetSet(selectedSet)
+        zoneBtn:SetText(getZoneLabel(set and set.zoneType) .. "  ▼")
+        zoneLbl:Show()
+        zoneBtn:Show()
+    end
+
     -- --------------------------------------------------------
     -- Divider
     -- --------------------------------------------------------
@@ -228,6 +315,7 @@ local function createMainFrame()
                 buildAddonList(name)
                 loadBtn:Enable()
                 deleteBtn:Enable()
+                updateZoneSelector()
             end)
 
             setRows[#setRows + 1] = row
@@ -274,6 +362,7 @@ local function createMainFrame()
             deleteBtn:Disable()
             buildSetList()
             buildAddonList(nil)
+            updateZoneSelector()
             AddonManager:RebuildPicker()
         end
     end)
@@ -324,6 +413,7 @@ local function createMainFrame()
         statusText:SetText("")
         buildSetList()
         buildAddonList(nil)
+        updateZoneSelector()
     end)
 
     -- Store refs for slash command use
@@ -341,6 +431,23 @@ local pickerAnchor
 local pickerDropdown
 local pickerRows    = {}
 local pickerIsOpen  = false
+
+-- StaticPopup for zone-triggered set switch
+StaticPopupDialogs["ADDONMANAGER_ZONE_SWITCH"] = {
+    text           = "You entered a %s. Switch to addon set \"%s\"?",
+    button1        = "Switch",
+    button2        = "Not Now",
+    OnAccept       = function(_, setName)
+        local err = AddonManager:ApplySet(setName)
+        if err then
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. err)
+        end
+    end,
+    timeout        = 0,
+    whileDead      = true,
+    hideOnEscape   = true,
+    preferredIndex = 3,
+}
 
 -- StaticPopup for overwrite confirmation
 StaticPopupDialogs["ADDONMANAGER_OVERWRITE_CONFIRM"] = {
@@ -560,8 +667,7 @@ end
 -- ============================================================
 -- Slash commands
 -- ============================================================
-SLASH_ADDONMANAGER1 = "/addonmanager"
-SLASH_ADDONMANAGER2 = "/am"
+SLASH_ADDONMANAGER1 = "/am"
 
 SlashCmdList["ADDONMANAGER"] = function(input)
     local cmd, rest = input:match("^(%S*)%s*(.*)")

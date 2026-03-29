@@ -23,9 +23,22 @@ local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall"
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
 subtitle:SetText("Save and switch between named addon sets.")
 
+-- Auto zone switch toggle
+local autoSwitchCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+autoSwitchCheck:SetSize(22, 22)
+autoSwitchCheck:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", 0, -14)
+if autoSwitchCheck.text then
+    autoSwitchCheck.text:SetText("Prompt to switch addon set when entering an instance")
+end
+autoSwitchCheck:SetScript("OnClick", function(self)
+    if AddonManager.db then
+        AddonManager.db.options.autoSwitchEnabled = self:GetChecked()
+    end
+end)
+
 -- Section header
 local sectionLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-sectionLabel:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", 0, -16)
+sectionLabel:SetPoint("TOPLEFT", autoSwitchCheck, "BOTTOMLEFT", 0, -10)
 sectionLabel:SetText("Saved Sets")
 
 -- --------------------------------------------------------
@@ -121,6 +134,18 @@ local function buildSetList()
         local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         label:SetPoint("LEFT", row, 6, 0)
         label:SetText(name)
+
+        -- Zone type badge
+        if name ~= "Default" then
+            local set = AddonManager:GetSet(name)
+            local zt = set and set.zoneType
+            if zt then
+                local zoneBadge = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                zoneBadge:SetPoint("LEFT", row, 200, 0)
+                zoneBadge:SetText(AddonManager.ZONE_LABEL[zt] or zt)
+                zoneBadge:SetTextColor(0.5, 0.8, 1, 1)
+            end
+        end
 
         local loadBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
         loadBtn:SetSize(70, 20)
@@ -218,7 +243,12 @@ end)
 -- --------------------------------------------------------
 -- Refresh list every time the panel is shown
 -- --------------------------------------------------------
-panel:SetScript("OnShow", buildSetList)
+panel:SetScript("OnShow", function()
+    if AddonManager.db then
+        autoSwitchCheck:SetChecked(AddonManager.db.options.autoSwitchEnabled)
+    end
+    buildSetList()
+end)
 
 -- --------------------------------------------------------
 -- Register with the Settings API (retail 10.x+)
