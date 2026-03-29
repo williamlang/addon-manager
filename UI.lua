@@ -288,13 +288,6 @@ local function createMainFrame()
             return
         end
 
-        -- Build the addons table from current checkbox state
-        local db = AddonManager.db
-        if db.sets[name] then
-            statusText:SetText("|cffff4444A set named \"" .. name .. "\" already exists.|r")
-            return
-        end
-
         local addons = {}
         for addonName, cb in pairs(checkboxes) do
             if cb:GetChecked() then
@@ -302,11 +295,23 @@ local function createMainFrame()
             end
         end
 
-        db.sets[name] = { name = name, addons = addons }
-        nameBox:SetText("")
-        statusText:SetText("|cff00ff00Saved set \"" .. name .. "\".|r")
-        buildSetList()
-        AddonManager:RebuildPicker()
+        local db = AddonManager.db
+        local function persist()
+            db.sets[name] = db.sets[name] or { name = name }
+            db.sets[name].addons = addons
+            nameBox:SetText("")
+            statusText:SetText("|cff00ff00Saved set \"" .. name .. "\".|r")
+            buildSetList()
+            AddonManager:RebuildPicker()
+        end
+
+        if db.sets[name] then
+            AddonManager.pendingOverwrite = persist
+            StaticPopup_Show("ADDONMANAGER_OVERWRITE_CONFIRM", name)
+            return
+        end
+
+        persist()
     end)
 
     -- --------------------------------------------------------
@@ -336,6 +341,26 @@ local pickerAnchor
 local pickerDropdown
 local pickerRows    = {}
 local pickerIsOpen  = false
+
+-- StaticPopup for overwrite confirmation
+StaticPopupDialogs["ADDONMANAGER_OVERWRITE_CONFIRM"] = {
+    text       = "A set named \"%s\" already exists. Overwrite it?",
+    button1    = "Overwrite",
+    button2    = "Cancel",
+    OnAccept   = function()
+        if AddonManager.pendingOverwrite then
+            AddonManager.pendingOverwrite()
+            AddonManager.pendingOverwrite = nil
+        end
+    end,
+    OnCancel   = function()
+        AddonManager.pendingOverwrite = nil
+    end,
+    timeout      = 0,
+    whileDead    = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
 
 -- StaticPopup for the reload confirmation
 StaticPopupDialogs["ADDONMANAGER_APPLY_CONFIRM"] = {

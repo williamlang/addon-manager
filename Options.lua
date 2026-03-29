@@ -180,13 +180,34 @@ saveBtn:SetScript("OnClick", function()
         statusText:SetText("|cffff4444Please enter a set name.|r")
         return
     end
-    local err = AddonManager:SaveCurrentState(name)
-    if err then
-        statusText:SetText("|cffff4444" .. err .. "|r")
+
+    local function doSave()
+        local err = AddonManager:SaveCurrentState(name)
+        if err then
+            statusText:SetText("|cffff4444" .. err .. "|r")
+        else
+            nameBox:SetText("")
+            statusText:SetText("|cff00ff00Saved \"" .. name .. "\".|r")
+            buildSetList()
+        end
+    end
+
+    local function doOverwrite()
+        local err = AddonManager:OverwriteSet(name)
+        if err then
+            statusText:SetText("|cffff4444" .. err .. "|r")
+        else
+            nameBox:SetText("")
+            statusText:SetText("|cff00ff00Overwrote \"" .. name .. "\".|r")
+            buildSetList()
+        end
+    end
+
+    if AddonManager.db.sets[name] then
+        AddonManager.pendingOverwrite = doOverwrite
+        StaticPopup_Show("ADDONMANAGER_OVERWRITE_CONFIRM", name)
     else
-        nameBox:SetText("")
-        statusText:SetText("|cff00ff00Saved \"" .. name .. "\".|r")
-        buildSetList()
+        doSave()
     end
 end)
 
