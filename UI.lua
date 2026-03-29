@@ -228,13 +228,13 @@ local function createMainFrame()
     confirmDialog.confirmText = confirmText
 
     local yesBtn = CreateFrame("Button", nil, confirmDialog, "UIPanelButtonTemplate")
-    yesBtn:SetSize(100, 24)
-    yesBtn:SetPoint("BOTTOMLEFT", confirmDialog, "BOTTOM", -54, 14)
+    yesBtn:SetSize(120, 24)
+    yesBtn:SetPoint("BOTTOMRIGHT", confirmDialog, "BOTTOM", -5, 14)
     yesBtn:SetText("Reload Now")
 
     local noBtn = CreateFrame("Button", nil, confirmDialog, "UIPanelButtonTemplate")
-    noBtn:SetSize(100, 24)
-    noBtn:SetPoint("BOTTOMRIGHT", confirmDialog, "BOTTOM", 54, 14)
+    noBtn:SetSize(120, 24)
+    noBtn:SetPoint("BOTTOMLEFT", confirmDialog, "BOTTOM", 5, 14)
     noBtn:SetText("Cancel")
     noBtn:SetScript("OnClick", function() confirmDialog:Hide() end)
 
