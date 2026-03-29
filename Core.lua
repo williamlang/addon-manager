@@ -30,8 +30,8 @@ end
 -- and all Blizzard_ built-in addons.
 function AddonManager:GetAllInstalledAddons()
     local list = {}
-    for i = 1, GetNumAddOns() do
-        local name = GetAddOnInfo(i)
+    for i = 1, C_AddOns.GetNumAddOns() do
+        local name = C_AddOns.GetAddOnInfo(i)
         if name and name ~= "AddonManager" and not name:find("^Blizzard_") then
             list[#list + 1] = name
         end

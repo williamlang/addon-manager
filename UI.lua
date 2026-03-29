@@ -182,7 +182,7 @@ local function createMainFrame()
                 local set = AddonManager:GetSet(filterSet)
                 cb:SetChecked(set and set.addons[addonName] == true)
             else
-                local state = GetAddOnEnableState(player, addonName)
+                local state = C_AddOns.GetAddOnEnableState(addonName, player)
                 cb:SetChecked(state > 0)
             end
 

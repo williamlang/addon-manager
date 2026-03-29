@@ -25,7 +25,7 @@ function AddonManager:SaveCurrentState(name)
     local player = UnitName("player")
     local addons = {}
     for _, addonName in ipairs(self:GetAllInstalledAddons()) do
-        local state = GetAddOnEnableState(player, addonName)
+        local state = C_AddOns.GetAddOnEnableState(addonName, player)
         if state > 0 then
             addons[addonName] = true
         end
@@ -53,7 +53,7 @@ function AddonManager:OverwriteSet(name)
     local player = UnitName("player")
     local addons = {}
     for _, addonName in ipairs(self:GetAllInstalledAddons()) do
-        local state = GetAddOnEnableState(player, addonName)
+        local state = C_AddOns.GetAddOnEnableState(addonName, player)
         if state > 0 then
             addons[addonName] = true
         end
@@ -145,20 +145,20 @@ function AddonManager:ApplySet(name)
     local player = UnitName("player")
 
     for _, addonName in ipairs(self:GetAllInstalledAddons()) do
-        DisableAddOn(addonName, player)
+        C_AddOns.DisableAddOn(addonName, player)
     end
 
     for addonName in pairs(set.addons) do
         -- GetAddOnInfo returns nil for the name if the addon isn't installed
-        local installedName = GetAddOnInfo(addonName)
+        local installedName = C_AddOns.GetAddOnInfo(addonName)
         if installedName then
-            EnableAddOn(addonName, player)
+            C_AddOns.EnableAddOn(addonName, player)
         end
     end
 
     -- Always keep AddonManager itself enabled regardless of what the set contains.
-    EnableAddOn("AddonManager", player)
+    C_AddOns.EnableAddOn("AddonManager", player)
 
-    SaveAddOns()
+    C_AddOns.SaveAddOns()
     ReloadUI()
 end
