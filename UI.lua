@@ -159,30 +159,24 @@ local function createMainFrame()
     local function buildAddonList(filterSet)
         -- filterSet: if provided, pre-check only the addons in that set
         --            if nil, reflect current live enable state
-        for _, cb in pairs(checkboxes) do cb:Hide() end
+        for _, cb in pairs(checkboxes) do
+            cb:Hide()
+            cb:ClearAllPoints()
+        end
         checkboxes = {}
 
         local player = UnitName("player")
         local addons = AddonManager:GetAllInstalledAddons()
         local y = 0
 
-        -- Resolve which addons are missing in filterSet (if any)
-        local missing = {}
-        if filterSet then
-            local _, missingList = AddonManager:ValidateSet(filterSet)
-            if missingList then
-                for _, n in ipairs(missingList) do missing[n] = true end
-            end
-        end
-
         for _, addonName in ipairs(addons) do
             local cb = CreateFrame("CheckButton", nil, addonContent, "UICheckButtonTemplate")
-            cb:SetSize(20, 20)
             cb:SetPoint("TOPLEFT", addonContent, 4, -y)
 
-            local lbl = cb:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            lbl:SetPoint("LEFT", cb, "RIGHT", 2, 0)
-            lbl:SetText(addonName)
+            -- UICheckButtonTemplate provides cb.text positioned to the right of the box
+            if cb.text then
+                cb.text:SetText(addonName)
+            end
 
             if filterSet then
                 local set = AddonManager:GetSet(filterSet)
