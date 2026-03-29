@@ -204,6 +204,7 @@ function AddonManager:ApplySet(name)
             C_AddOns.EnableAddOn(addonName, player)
         end
         C_AddOns.EnableAddOn("AddonManager", player)
+        getDB().lastAppliedSet = name
         C_AddOns.SaveAddOns()
         ReloadUI()
         return nil
@@ -230,6 +231,7 @@ function AddonManager:ApplySet(name)
     -- Always keep AddonManager itself enabled regardless of what the set contains.
     C_AddOns.EnableAddOn("AddonManager", player)
 
+    getDB().lastAppliedSet = name
     C_AddOns.SaveAddOns()
     ReloadUI()
 end

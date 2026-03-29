@@ -71,6 +71,7 @@ function AddonManager:CheckZoneSwitch()
     if not zoneType then return end
     local setName = self:GetSetForZoneType(zoneType)
     if not setName then return end
+    if self.db.lastAppliedSet == setName then return end
     local label = self.ZONE_LABEL[zoneType] or zoneType
     StaticPopup_Show("ADDONMANAGER_ZONE_SWITCH", label, setName, setName)
 end
