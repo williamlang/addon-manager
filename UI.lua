@@ -274,6 +274,7 @@ local function createMainFrame()
             deleteBtn:Disable()
             buildSetList()
             buildAddonList(nil)
+            if pickerFrame and pickerFrame:IsShown() then pickerFrame.rebuild() end
         end
     end)
 
@@ -305,6 +306,7 @@ local function createMainFrame()
         nameBox:SetText("")
         statusText:SetText("|cff00ff00Saved set \"" .. name .. "\".|r")
         buildSetList()
+        if pickerFrame and pickerFrame:IsShown() then pickerFrame.rebuild() end
     end)
 
     -- --------------------------------------------------------
@@ -322,6 +324,127 @@ local function createMainFrame()
     -- Store refs for slash command use
     f.buildSetList  = buildSetList
     f.buildAddonList = buildAddonList
+end
+
+-- ============================================================
+-- Quick-pick window
+-- ============================================================
+local pickerFrame
+
+local function createPickerFrame()
+    if pickerFrame then return end
+
+    local PICKER_W = 180
+    local PICKER_ROW_H = 24
+
+    local f = CreateFrame("Frame", "AddonManagerPickerFrame", UIParent, "BasicFrameTemplate")
+    f:SetWidth(PICKER_W)
+    f:SetPoint("CENTER", UIParent, "CENTER", 300, 0)
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetFrameStrata("DIALOG")
+    f:SetClampedToScreen(true)
+    f:Hide()
+    pickerFrame = f
+
+    if f.TitleText then f.TitleText:SetText("Addon Sets") end
+
+    local scrollFrame = CreateFrame("ScrollFrame", "AddonManagerPickerScroll", f, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -28)
+    scrollFrame:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -24, 8)
+
+    local content = CreateFrame("Frame", "AddonManagerPickerContent", scrollFrame)
+    content:SetWidth(PICKER_W - 30)
+    content:SetHeight(1)
+    scrollFrame:SetScrollChild(content)
+
+    -- confirm dialog (shared with main frame, but we need our own yesBtn callback)
+    local function applyWithConfirm(name)
+        if AddonManager.db.options.confirmOnSwitch then
+            -- reuse the main confirm dialog if it exists, otherwise just apply
+            local dlg = _G["AddonManagerConfirmDialog"]
+            if dlg and dlg.confirmText then
+                dlg.confirmText:SetText("Switch to set \"" .. name .. "\"?\nThis will reload the UI.")
+                -- find yesBtn by iterating children
+                for _, child in ipairs({ dlg:GetChildren() }) do
+                    if child.GetText and child:GetText() == "Reload Now" then
+                        child:SetScript("OnClick", function()
+                            dlg:Hide()
+                            local err = AddonManager:ApplySet(name)
+                            if err then
+                                DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. err)
+                            end
+                        end)
+                        break
+                    end
+                end
+                dlg:Show()
+            else
+                local err = AddonManager:ApplySet(name)
+                if err then
+                    DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. err)
+                end
+            end
+        else
+            local err = AddonManager:ApplySet(name)
+            if err then
+                DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. err)
+            end
+        end
+    end
+
+    local rows = {}
+
+    local function buildPickerList()
+        for _, row in ipairs(rows) do row:Hide() end
+        rows = {}
+
+        local names = AddonManager:ListSets()
+        local y = 0
+
+        for _, name in ipairs(names) do
+            local row = CreateFrame("Button", nil, content)
+            row:SetSize(PICKER_W - 30, PICKER_ROW_H)
+            row:SetPoint("TOPLEFT", content, 0, -y)
+
+            -- hover highlight
+            local hl = row:CreateTexture(nil, "HIGHLIGHT")
+            hl:SetAllPoints()
+            hl:SetColorTexture(1, 1, 1, 0.1)
+
+            local lbl = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            lbl:SetPoint("LEFT", row, 6, 0)
+            lbl:SetText(name == "Default" and "|cffffcc00" .. name .. "|r" or name)
+
+            row:SetScript("OnClick", function()
+                applyWithConfirm(name)
+            end)
+
+            rows[#rows + 1] = row
+            y = y + PICKER_ROW_H
+        end
+
+        local totalH = math.max(#names * PICKER_ROW_H, 1)
+        content:SetHeight(totalH)
+        -- resize the picker frame to fit content (capped at 400)
+        local visibleH = math.min(totalH, 400)
+        f:SetHeight(visibleH + 36)
+    end
+
+    f:SetScript("OnShow", buildPickerList)
+    f.rebuild = buildPickerList
+end
+
+function AddonManager:TogglePicker()
+    createPickerFrame()
+    if pickerFrame:IsShown() then
+        pickerFrame:Hide()
+    else
+        pickerFrame:Show()
+    end
 end
 
 -- ============================================================
@@ -396,11 +519,15 @@ SlashCmdList["ADDONMANAGER"] = function(input)
         local err = AddonManager:RenameSet(oldName, newName)
         if err then print(err) else print("Renamed \"" .. oldName .. "\" to \"" .. newName .. "\".") end
 
+    elseif cmd == "pick" then
+        AddonManager:TogglePicker()
+
     elseif cmd == "options" or cmd == "config" then
         AddonManager:OpenOptions()
 
     elseif cmd == "help" then
         print("/am               — toggle UI")
+        print("/am pick          — toggle quick-pick window")
         print("/am options       — open settings panel")
         print("/am list          — list saved sets")
         print("/am save <name>   — save current addon state as a named set")

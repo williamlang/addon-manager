@@ -1,5 +1,12 @@
+local DEFAULT_SET = "Default"
+
 local function getDB()
     return AddonManager.db
+end
+
+-- Returns true if the name is a reserved built-in set.
+local function isReserved(name)
+    return name == DEFAULT_SET
 end
 
 -- Returns true if a set name is valid (non-empty, safe characters).
@@ -13,6 +20,9 @@ end
 -- Snapshots the currently enabled addons into a new named set.
 -- Returns nil on success, or an error string.
 function AddonManager:SaveCurrentState(name)
+    if isReserved(name) then
+        return "\"" .. name .. "\" is a reserved set name."
+    end
     if not isValidName(name) then
         return "Invalid set name. Use letters, numbers, spaces, hyphens, and underscores only."
     end
@@ -41,6 +51,9 @@ end
 -- Overwrites an existing set with the current addon state.
 -- Returns nil on success, or an error string.
 function AddonManager:OverwriteSet(name)
+    if isReserved(name) then
+        return "\"" .. name .. "\" is a reserved set and cannot be overwritten."
+    end
     if not isValidName(name) then
         return "Invalid set name."
     end
@@ -65,6 +78,9 @@ end
 
 -- Deletes a named set. Returns nil on success, or an error string.
 function AddonManager:DeleteSet(name)
+    if isReserved(name) then
+        return "\"" .. name .. "\" is a reserved set and cannot be deleted."
+    end
     local db = getDB()
     if not db.sets[name] then
         return "Set \"" .. name .. "\" does not exist."
@@ -75,6 +91,12 @@ end
 
 -- Renames a set. Returns nil on success, or an error string.
 function AddonManager:RenameSet(oldName, newName)
+    if isReserved(oldName) then
+        return "\"" .. oldName .. "\" is a reserved set and cannot be renamed."
+    end
+    if isReserved(newName) then
+        return "\"" .. newName .. "\" is a reserved set name."
+    end
     if not isValidName(newName) then
         return "Invalid set name. Use letters, numbers, spaces, hyphens, and underscores only."
     end
@@ -93,7 +115,7 @@ function AddonManager:RenameSet(oldName, newName)
     return nil
 end
 
--- Returns a sorted list of set names.
+-- Returns a sorted list of set names, with Default always first.
 function AddonManager:ListSets()
     local db = getDB()
     local names = {}
@@ -101,11 +123,14 @@ function AddonManager:ListSets()
         names[#names + 1] = name
     end
     table.sort(names)
+    table.insert(names, 1, DEFAULT_SET)
     return names
 end
 
 -- Returns the set table for a given name, or nil.
+-- Default is virtual and has no stored table.
 function AddonManager:GetSet(name)
+    if isReserved(name) then return nil end
     return getDB().sets[name]
 end
 
@@ -135,21 +160,32 @@ end
 
 -- Applies a set: disables all addons, enables only those in the set,
 -- saves, and reloads. Missing addons are skipped silently.
+-- "Default" enables all installed addons.
 -- Returns nil on success, or an error string if the set doesn't exist.
 function AddonManager:ApplySet(name)
+    local player = UnitName("player")
+
+    if isReserved(name) then
+        -- Default: enable everything
+        for _, addonName in ipairs(self:GetAllInstalledAddons()) do
+            C_AddOns.EnableAddOn(addonName, player)
+        end
+        C_AddOns.EnableAddOn("AddonManager", player)
+        C_AddOns.SaveAddOns()
+        ReloadUI()
+        return nil
+    end
+
     local set = self:GetSet(name)
     if not set then
         return "Set \"" .. name .. "\" does not exist."
     end
-
-    local player = UnitName("player")
 
     for _, addonName in ipairs(self:GetAllInstalledAddons()) do
         C_AddOns.DisableAddOn(addonName, player)
     end
 
     for addonName in pairs(set.addons) do
-        -- GetAddOnInfo returns nil for the name if the addon isn't installed
         local installedName = C_AddOns.GetAddOnInfo(addonName)
         if installedName then
             C_AddOns.EnableAddOn(addonName, player)
