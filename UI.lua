@@ -393,7 +393,6 @@ end
 local function closeDropdown()
     if pickerDropdown then pickerDropdown:Hide() end
     pickerIsOpen = false
-    if pickerAnchor then pickerAnchor:SetText("Addon Sets  ▼") end
 end
 
 local function openDropdown()
@@ -430,45 +429,93 @@ local function openDropdown()
 
     pickerDropdown:SetHeight(math.abs(y) + 4)
     pickerDropdown:ClearAllPoints()
-    pickerDropdown:SetPoint("TOPLEFT", pickerAnchor, "BOTTOMLEFT", 0, -2)
+    pickerDropdown:SetPoint("TOPLEFT", pickerAnchor, "BOTTOMLEFT", 0, -4)
     pickerDropdown:Show()
     pickerIsOpen = true
-    pickerAnchor:SetText("Addon Sets  ▲")
+end
+
+local MINIMAP_RADIUS = 80
+
+local function updateMinimapPos()
+    local angle = (AddonManager.db and AddonManager.db.minimapAngle) or 225
+    local rad = math.rad(angle)
+    pickerAnchor:ClearAllPoints()
+    pickerAnchor:SetPoint("CENTER", Minimap, "CENTER",
+        math.cos(rad) * MINIMAP_RADIUS,
+        math.sin(rad) * MINIMAP_RADIUS)
 end
 
 local function createPicker()
     if pickerAnchor then return end
 
-    -- Anchor button (always on screen)
-    local btn = CreateFrame("Button", "AddonManagerPickerAnchor", UIParent, "UIPanelButtonTemplate")
-    btn:SetSize(PICK_W, 24)
-    btn:SetText("Addon Sets  ▼")
-    btn:SetMovable(true)
+    -- Minimap button
+    local btn = CreateFrame("Button", "AddonManagerMinimapButton", Minimap)
+    btn:SetSize(32, 32)
+    btn:SetFrameStrata("MEDIUM")
+    btn:SetFrameLevel(8)
     btn:EnableMouse(true)
     btn:RegisterForDrag("LeftButton")
-    btn:SetClampedToScreen(true)
-    btn:SetScript("OnDragStart", btn.StartMoving)
-    btn:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
+
+    -- Icon (Engineering/gears — fitting for an addon manager)
+    local icon = btn:CreateTexture(nil, "ARTWORK")
+    icon:SetTexture("Interface/Icons/Trade_Engineering")
+    icon:SetSize(20, 20)
+    icon:SetPoint("CENTER")
+    icon:SetMask("Interface/CharacterFrame/TempPortraitAlphaMask")
+
+    -- Circular border ring
+    local border = btn:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface/Minimap/MiniMap-TrackingBorder")
+    border:SetSize(56, 56)
+    border:SetPoint("CENTER")
+
+    -- Highlight
+    local hl = btn:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetTexture("Interface/Minimap/UI-Minimap-ZoomButton-Highlight")
+    hl:SetSize(56, 56)
+    hl:SetPoint("CENTER")
+    hl:SetBlendMode("ADD")
+
+    -- Drag to orbit the minimap
+    local dragging = false
+    btn:SetScript("OnDragStart", function(self)
+        dragging = true
         closeDropdown()
-        local point, _, relPoint, x, y = self:GetPoint()
-        if AddonManager.db then
-            AddonManager.db.pickerPos = { point = point, relPoint = relPoint, x = x, y = y }
+        self:SetScript("OnUpdate", function()
+            local mx, my = Minimap:GetCenter()
+            local scale = UIParent:GetEffectiveScale()
+            local cx, cy = GetCursorPosition()
+            cx, cy = cx / scale, cy / scale
+            local angle = math.deg(math.atan2(cy - my, cx - mx))
+            if AddonManager.db then AddonManager.db.minimapAngle = angle end
+            updateMinimapPos()
+        end)
+    end)
+    btn:SetScript("OnDragStop", function(self)
+        self:SetScript("OnUpdate", nil)
+        dragging = false
+    end)
+
+    -- Click to toggle dropdown
+    btn:SetScript("OnClick", function(_, button)
+        if dragging then return end
+        if button == "LeftButton" then
+            if pickerIsOpen then closeDropdown() else openDropdown() end
         end
     end)
-    btn:SetScript("OnClick", function()
-        if pickerIsOpen then closeDropdown() else openDropdown() end
-    end)
 
-    -- Restore saved position or default
-    local pos = AddonManager.db and AddonManager.db.pickerPos
-    if pos then
-        btn:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
-    else
-        btn:SetPoint("TOP", UIParent, "TOP", 0, -180)
-    end
+    -- Tooltip
+    btn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        GameTooltip:AddLine("AddonManager", 1, 1, 1)
+        GameTooltip:AddLine("Click to pick an addon set", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("Drag to reposition", 0.5, 0.5, 0.5)
+        GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     pickerAnchor = btn
+    updateMinimapPos()
 
     -- Dropdown panel
     local d = CreateFrame("Frame", "AddonManagerPickerDropdown", UIParent, "BackdropTemplate")
