@@ -41,10 +41,14 @@ end
 
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:SetScript("OnEvent", function(_, event, addonName)
     if event == "ADDON_LOADED" and addonName == "AddonManager" then
         initDB()
         AddonManager.db = AddonManagerDB
         frame:UnregisterEvent("ADDON_LOADED")
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        AddonManager:ShowPicker()
+        frame:UnregisterEvent("PLAYER_ENTERING_WORLD")
     end
 end)
