@@ -456,24 +456,26 @@ local function createPicker()
     btn:EnableMouse(true)
     btn:RegisterForDrag("LeftButton")
 
-    -- Icon (Engineering/gears — fitting for an addon manager)
+    local mask = "Interface/CharacterFrame/TempPortraitAlphaMask"
+
+    -- Gold border ring (full button size; icon sits on top, leaving a ring at the edges)
+    local ring = btn:CreateTexture(nil, "BACKGROUND")
+    ring:SetColorTexture(0.82, 0.65, 0.13, 1)
+    ring:SetAllPoints()
+    ring:SetMask(mask)
+
+    -- Icon clipped to circle, slightly inset to expose the gold ring
     local icon = btn:CreateTexture(nil, "ARTWORK")
     icon:SetTexture("Interface/Icons/Trade_Engineering")
-    icon:SetSize(20, 20)
+    icon:SetSize(24, 24)
     icon:SetPoint("CENTER")
-    icon:SetMask("Interface/CharacterFrame/TempPortraitAlphaMask")
+    icon:SetMask(mask)
 
-    -- Circular border ring
-    local border = btn:CreateTexture(nil, "OVERLAY")
-    border:SetTexture("Interface/Minimap/MiniMap-TrackingBorder")
-    border:SetSize(56, 56)
-    border:SetPoint("CENTER")
-
-    -- Highlight
+    -- Hover highlight
     local hl = btn:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetTexture("Interface/Minimap/UI-Minimap-ZoomButton-Highlight")
-    hl:SetSize(56, 56)
-    hl:SetPoint("CENTER")
+    hl:SetColorTexture(1, 1, 1, 0.3)
+    hl:SetAllPoints()
+    hl:SetMask(mask)
     hl:SetBlendMode("ADD")
 
     -- Drag to orbit the minimap
