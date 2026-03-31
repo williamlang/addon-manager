@@ -37,6 +37,7 @@ Click the minimap button to open a dropdown list of your saved sets. Click any s
 | `/am rename <old> <new>` | Rename a set |
 | `/am list` | List all saved sets |
 | `/am options` | Open the Interface Options panel |
+| `/am help` | Show command reference in chat |
 
 ### Main window (`/am`)
 
