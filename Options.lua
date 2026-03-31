@@ -223,11 +223,22 @@ end)
 
 -- --------------------------------------------------------
 -- Register with the Settings API (retail 10.x+)
+-- Deferred to ADDON_LOADED so the Settings API is fully ready.
 -- --------------------------------------------------------
-local category = Settings.RegisterCanvasLayoutCategory(panel, "AddonManager")
-category:SetID("AddonManager")
-Settings.RegisterAddOnCategory(category)
+local optionsCategory
+
+local optionsLoader = CreateFrame("Frame")
+optionsLoader:RegisterEvent("ADDON_LOADED")
+optionsLoader:SetScript("OnEvent", function(self, event, addonName)
+    if addonName ~= "AddonManager" then return end
+    self:UnregisterEvent("ADDON_LOADED")
+    optionsCategory = Settings.RegisterCanvasLayoutCategory(panel, "AddonManager")
+    optionsCategory:SetID("AddonManager")
+    Settings.RegisterAddOnCategory(optionsCategory)
+end)
 
 function AddonManager:OpenOptions()
-    Settings.OpenToCategory("AddonManager")
+    if optionsCategory then
+        Settings.OpenToCategory(optionsCategory)
+    end
 end
