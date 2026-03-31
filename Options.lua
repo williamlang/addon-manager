@@ -5,12 +5,8 @@
 local ROW_H = 26
 local PAD   = 12
 
-local function print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. tostring(msg))
-end
-
 -- --------------------------------------------------------
--- Panel frame (752 wide is the standard canvas width)
+-- Panel frame
 -- --------------------------------------------------------
 local panel = CreateFrame("Frame")
 panel:Hide()
@@ -23,10 +19,19 @@ local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall"
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
 subtitle:SetText("Save and switch between named addon sets.")
 
+-- Open main window button
+local openBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+openBtn:SetSize(160, 24)
+openBtn:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", 0, -14)
+openBtn:SetText("Open AddonManager")
+openBtn:SetScript("OnClick", function()
+    AddonManager:ToggleUI()
+end)
+
 -- Auto zone switch toggle
 local autoSwitchCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
 autoSwitchCheck:SetSize(22, 22)
-autoSwitchCheck:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", 0, -14)
+autoSwitchCheck:SetPoint("TOPLEFT", openBtn, "BOTTOMLEFT", 0, -10)
 if autoSwitchCheck.text then
     autoSwitchCheck.text:SetText("Prompt to switch addon set when entering an instance")
 end
@@ -38,7 +43,7 @@ end)
 
 -- Section header
 local sectionLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-sectionLabel:SetPoint("TOPLEFT", autoSwitchCheck, "BOTTOMLEFT", 0, -10)
+sectionLabel:SetPoint("TOPLEFT", autoSwitchCheck, "BOTTOMLEFT", 0, -12)
 sectionLabel:SetText("Saved Sets")
 
 -- --------------------------------------------------------
@@ -46,7 +51,7 @@ sectionLabel:SetText("Saved Sets")
 -- --------------------------------------------------------
 local scrollFrame = CreateFrame("ScrollFrame", "AddonManagerOptionsScroll", panel, "UIPanelScrollFrameTemplate")
 scrollFrame:SetPoint("TOPLEFT", sectionLabel, "BOTTOMLEFT", 0, -6)
-scrollFrame:SetSize(700, 340)
+scrollFrame:SetSize(700, 300)
 
 local scrollChild = CreateFrame("Frame", "AddonManagerOptionsScrollChild", scrollFrame)
 scrollChild:SetSize(680, 1)
@@ -64,7 +69,7 @@ nameBox:SetSize(200, 20)
 nameBox:SetPoint("TOPLEFT", saveLabel, "BOTTOMLEFT", 0, -6)
 nameBox:SetAutoFocus(false)
 nameBox:SetMaxLetters(64)
-nameBox:SetHintText("Set name…")
+nameBox:SetHintText("Set name...")
 
 local saveBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 saveBtn:SetSize(120, 24)
@@ -76,33 +81,6 @@ statusText:SetPoint("LEFT", saveBtn, "RIGHT", 10, 0)
 statusText:SetWidth(280)
 statusText:SetJustifyH("LEFT")
 statusText:SetText("")
-
--- --------------------------------------------------------
--- Confirm-reload dialog (reuse or create standalone)
--- --------------------------------------------------------
-local confirmDialog = CreateFrame("Frame", "AddonManagerOptionsConfirm", UIParent, "BasicFrameTemplate")
-confirmDialog:SetSize(360, 130)
-confirmDialog:SetPoint("CENTER")
-confirmDialog:SetFrameStrata("FULLSCREEN_DIALOG")
-confirmDialog:Hide()
-confirmDialog.TitleText:SetText("Confirm Reload")
-
-local confirmText = confirmDialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-confirmText:SetPoint("TOP", confirmDialog, "TOP", 0, -36)
-confirmText:SetWidth(320)
-confirmText:SetJustifyH("CENTER")
-confirmDialog.confirmText = confirmText
-
-local yesBtn = CreateFrame("Button", nil, confirmDialog, "UIPanelButtonTemplate")
-yesBtn:SetSize(120, 24)
-yesBtn:SetPoint("BOTTOMRIGHT", confirmDialog, "BOTTOM", -5, 14)
-yesBtn:SetText("Reload Now")
-
-local noBtn = CreateFrame("Button", nil, confirmDialog, "UIPanelButtonTemplate")
-noBtn:SetSize(120, 24)
-noBtn:SetPoint("BOTTOMLEFT", confirmDialog, "BOTTOM", 5, 14)
-noBtn:SetText("Cancel")
-noBtn:SetScript("OnClick", function() confirmDialog:Hide() end)
 
 -- --------------------------------------------------------
 -- Build / rebuild the set list rows
@@ -124,7 +102,6 @@ local function buildSetList()
         row:SetSize(660, ROW_H)
         row:SetPoint("TOPLEFT", scrollChild, 0, -y)
 
-        -- alternating background
         if (#setRows % 2 == 0) then
             local bg = row:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
@@ -141,7 +118,7 @@ local function buildSetList()
             local zt = set and set.zoneType
             if zt then
                 local zoneBadge = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                zoneBadge:SetPoint("LEFT", row, 200, 0)
+                zoneBadge:SetPoint("LEFT", row, 220, 0)
                 zoneBadge:SetText(AddonManager.ZONE_LABEL[zt] or zt)
                 zoneBadge:SetTextColor(0.5, 0.8, 1, 1)
             end
@@ -152,20 +129,14 @@ local function buildSetList()
         loadBtn:SetPoint("RIGHT", row, "RIGHT", -84, 0)
         loadBtn:SetText("Load")
         loadBtn:SetScript("OnClick", function()
-            local setName = name
+            -- reuse the StaticPopup defined in UI.lua
             if AddonManager.db.options.confirmOnSwitch then
-                confirmDialog.confirmText:SetText(
-                    "Switch to set \"" .. setName .. "\"?\nThis will reload the UI."
-                )
-                yesBtn:SetScript("OnClick", function()
-                    confirmDialog:Hide()
-                    local err = AddonManager:ApplySet(setName)
-                    if err then print(err) end
-                end)
-                confirmDialog:Show()
+                StaticPopup_Show("ADDONMANAGER_APPLY_CONFIRM", name, nil, name)
             else
-                local err = AddonManager:ApplySet(setName)
-                if err then print(err) end
+                local err = AddonManager:ApplySet(name)
+                if err then
+                    DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. err)
+                end
             end
         end)
 
@@ -241,7 +212,7 @@ nameBox:SetScript("OnEnterPressed", function()
 end)
 
 -- --------------------------------------------------------
--- Refresh list every time the panel is shown
+-- Refresh every time the panel is shown
 -- --------------------------------------------------------
 panel:SetScript("OnShow", function()
     if AddonManager.db then
@@ -257,7 +228,6 @@ local category = Settings.RegisterCanvasLayoutCategory(panel, "AddonManager")
 category:SetID("AddonManager")
 Settings.RegisterAddOnCategory(category)
 
--- Expose so slash commands / main UI can open directly
 function AddonManager:OpenOptions()
     Settings.OpenToCategory("AddonManager")
 end
