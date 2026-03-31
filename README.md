@@ -1,6 +1,6 @@
 # AddonManager
 
-A World of Warcraft addon (Retail 12.0.1) that lets you save named sets of enabled addons and switch between them.
+A World of Warcraft addon (Retail 12.0.1–12.0.5) that lets you save named sets of enabled addons and switch between them.
 
 ## Features
 
