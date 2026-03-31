@@ -1,0 +1,23 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build zip
+        run: |
+          mkdir -p AddonManager
+          cp AddonManager.toc Core.lua Sets.lua Options.lua UI.lua AddonManager/
+          zip -r AddonManager-${{ github.ref_name }}.zip AddonManager/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AddonManager-${{ github.ref_name }}.zip
