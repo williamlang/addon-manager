@@ -13,6 +13,16 @@ local function print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff00ccffAddonManager:|r " .. tostring(msg))
 end
 
+local function formatMemory(kb)
+    if kb >= 1024 then
+        return string.format("%.1f MB", kb / 1024)
+    elseif kb >= 1 then
+        return string.format("%d KB", math.floor(kb))
+    else
+        return "< 1 KB"
+    end
+end
+
 -- ============================================================
 -- Main frame (built lazily on first open)
 -- ============================================================
@@ -24,6 +34,7 @@ local function createMainFrame()
     -- State (declared early so all closures can reference them)
     local selectedSet = nil   -- currently highlighted set name
     local checkboxes  = {}    -- addonName -> CheckButton
+    local memLabels   = {}    -- FontStrings showing per-addon memory (recreated on each build)
 
     -- Root frame
     local f = CreateFrame("Frame", "AddonManagerFrame", UIParent, "BasicFrameTemplateWithInset")
@@ -54,7 +65,7 @@ local function createMainFrame()
     -- ScrollFrame for the set list
     local setScroll = CreateFrame("ScrollFrame", "AddonManagerSetScroll", leftPanel, "UIPanelScrollFrameTemplate")
     setScroll:SetPoint("TOPLEFT", setListLabel, "BOTTOMLEFT", 0, -4)
-    setScroll:SetPoint("BOTTOMRIGHT", leftPanel, "BOTTOMRIGHT", -28, 60)
+    setScroll:SetPoint("BOTTOMRIGHT", leftPanel, "BOTTOMRIGHT", -28, 80)
 
     local setContent = CreateFrame("Frame", "AddonManagerSetContent", setScroll)
     setContent:SetSize(PANEL_LEFT_W - 30, 1)
@@ -83,6 +94,12 @@ local function createMainFrame()
     zoneBtn:SetSize(130, 20)
     zoneBtn:SetPoint("LEFT", zoneLbl, "RIGHT", 4, 0)
     zoneBtn:Hide()
+
+    -- Memory total for the selected set
+    local memTotalLbl = leftPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    memTotalLbl:SetPoint("BOTTOMLEFT", leftPanel, PAD, PAD + 52)
+    memTotalLbl:SetTextColor(0.4, 0.8, 0.4, 1)
+    memTotalLbl:Hide()
 
     -- Zone dropdown (opens upward)
     local zoneDropdown = CreateFrame("Frame", nil, leftPanel, "BackdropTemplate")
@@ -158,6 +175,20 @@ local function createMainFrame()
         zoneBtn:SetText(getZoneLabel(set and set.zoneType) .. "")
         zoneLbl:Show()
         zoneBtn:Show()
+    end
+
+    local function updateMemTotal()
+        if not selectedSet then
+            memTotalLbl:Hide()
+            return
+        end
+        local total = AddonManager:GetSetMemoryTotal(selectedSet)
+        if total > 0 then
+            memTotalLbl:SetText("Memory: " .. formatMemory(total))
+            memTotalLbl:Show()
+        else
+            memTotalLbl:Hide()
+        end
     end
 
     -- --------------------------------------------------------
@@ -251,6 +282,8 @@ local function createMainFrame()
             cb:ClearAllPoints()
         end
         checkboxes = {}
+        for _, lbl in ipairs(memLabels) do lbl:Hide() end
+        memLabels = {}
 
         local player = UnitName("player")
         local addons = AddonManager:GetAllInstalledAddons()
@@ -263,6 +296,7 @@ local function createMainFrame()
             -- UICheckButtonTemplate provides cb.text positioned to the right of the box
             if cb.text then
                 cb.text:SetText(addonName)
+                cb.text:SetWidth(300)
             end
 
             if filterSet then
@@ -274,6 +308,17 @@ local function createMainFrame()
             end
 
             checkboxes[addonName] = cb
+
+            -- Memory label aligned to the right edge of the content area
+            local d = AddonManager:GetAddonMemory(addonName)
+            if d and d.current > 0 then
+                local memLbl = addonContent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                memLbl:SetPoint("TOPRIGHT", addonContent, "TOPRIGHT", -4, -y)
+                memLbl:SetTextColor(0.5, 0.5, 0.5, 1)
+                memLbl:SetText(formatMemory(d.current))
+                memLabels[#memLabels + 1] = memLbl
+            end
+
             y = y + ROW_H
         end
 
@@ -316,6 +361,7 @@ local function createMainFrame()
                 loadBtn:Enable()
                 deleteBtn:Enable()
                 updateZoneSelector()
+                updateMemTotal()
             end)
 
             setRows[#setRows + 1] = row
@@ -363,6 +409,7 @@ local function createMainFrame()
             buildSetList()
             buildAddonList(nil)
             updateZoneSelector()
+            updateMemTotal()
             AddonManager:RebuildPicker()
         end
     end)
@@ -407,6 +454,7 @@ local function createMainFrame()
     -- OnShow: refresh everything
     -- --------------------------------------------------------
     f:SetScript("OnShow", function()
+        AddonManager:SampleMemory()
         selectedSet = nil
         loadBtn:Disable()
         deleteBtn:Disable()
@@ -414,6 +462,7 @@ local function createMainFrame()
         buildSetList()
         buildAddonList(nil)
         updateZoneSelector()
+        updateMemTotal()
     end)
 
     -- Store refs for slash command use

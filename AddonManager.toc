@@ -7,5 +7,6 @@
 
 Core.lua
 Sets.lua
+Performance.lua
 Options.lua
 UI.lua
