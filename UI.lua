@@ -454,7 +454,9 @@ local function createMainFrame()
     -- OnShow: refresh everything
     -- --------------------------------------------------------
     f:SetScript("OnShow", function()
-        AddonManager:SampleMemory()
+        if AddonManager.db and AddonManager.db.options.memoryTrackingEnabled then
+            AddonManager:SampleMemory()
+        end
         selectedSet = nil
         loadBtn:Disable()
         deleteBtn:Disable()

@@ -41,9 +41,22 @@ autoSwitchCheck:SetScript("OnClick", function(self)
     end
 end)
 
+-- Memory tracking toggle
+local memTrackCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+memTrackCheck:SetSize(22, 22)
+memTrackCheck:SetPoint("TOPLEFT", autoSwitchCheck, "BOTTOMLEFT", 0, -6)
+if memTrackCheck.text then
+    memTrackCheck.text:SetText("Track addon memory usage (shown in the AddonManager window)")
+end
+memTrackCheck:SetScript("OnClick", function(self)
+    if AddonManager.db then
+        AddonManager.db.options.memoryTrackingEnabled = self:GetChecked()
+    end
+end)
+
 -- Section header
 local sectionLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-sectionLabel:SetPoint("TOPLEFT", autoSwitchCheck, "BOTTOMLEFT", 0, -12)
+sectionLabel:SetPoint("TOPLEFT", memTrackCheck, "BOTTOMLEFT", 0, -12)
 sectionLabel:SetText("Saved Sets")
 
 -- --------------------------------------------------------
@@ -217,6 +230,7 @@ end)
 panel:SetScript("OnShow", function()
     if AddonManager.db then
         autoSwitchCheck:SetChecked(AddonManager.db.options.autoSwitchEnabled)
+        memTrackCheck:SetChecked(AddonManager.db.options.memoryTrackingEnabled)
     end
     buildSetList()
 end)

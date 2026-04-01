@@ -55,5 +55,7 @@ perfFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 perfFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 perfFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 perfFrame:SetScript("OnEvent", function()
-    C_Timer.After(1, sample)
+    if AddonManager.db and AddonManager.db.options.memoryTrackingEnabled then
+        C_Timer.After(1, sample)
+    end
 end)

@@ -26,8 +26,9 @@ AddonManager.INSTANCE_TO_ZONE = {
 local defaults = {
     sets = {},
     options = {
-        confirmOnSwitch   = true,
-        autoSwitchEnabled = true,
+        confirmOnSwitch      = true,
+        autoSwitchEnabled    = true,
+        memoryTrackingEnabled = false,
     },
     version = 1,
 }
@@ -48,6 +49,9 @@ local function initDB()
     if not AddonManagerDB.options then AddonManagerDB.options = CopyTable(defaults.options) end
     if AddonManagerDB.options.autoSwitchEnabled == nil then
         AddonManagerDB.options.autoSwitchEnabled = true
+    end
+    if AddonManagerDB.options.memoryTrackingEnabled == nil then
+        AddonManagerDB.options.memoryTrackingEnabled = false
     end
 end
 
