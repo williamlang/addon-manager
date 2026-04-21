@@ -82,7 +82,6 @@ nameBox:SetSize(200, 20)
 nameBox:SetPoint("TOPLEFT", saveLabel, "BOTTOMLEFT", 0, -6)
 nameBox:SetAutoFocus(false)
 nameBox:SetMaxLetters(64)
-nameBox:SetHintText("Set name...")
 
 local saveBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 saveBtn:SetSize(120, 24)
