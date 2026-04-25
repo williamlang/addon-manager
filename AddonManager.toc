@@ -2,7 +2,7 @@
 ## Title: AddonManager
 ## Notes: Save and switch between named addon sets
 ## Author:
-## Version: 1.0.0
+## Version: 1.0.4
 ## SavedVariables: AddonManagerDB
 
 Core.lua

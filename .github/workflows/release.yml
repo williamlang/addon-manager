@@ -16,7 +16,8 @@ jobs:
       - name: Build zip
         run: |
           mkdir -p AddonManager
-          cp AddonManager.toc Core.lua Sets.lua Options.lua UI.lua AddonManager/
+          cp AddonManager.toc AddonManager/
+          awk 'NF && $0 !~ /^#/' AddonManager.toc | xargs -I {} cp {} AddonManager/
           zip -r AddonManager-${{ github.ref_name }}.zip AddonManager/
 
       - name: Create release
